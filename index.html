@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Ticketing DApp - Tubes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script>
+        window.onload = function () {
+            if (typeof ethers === 'undefined') {
+                alert("Gagal memuat library ethers.js. Pastikan Anda terhubung ke internet.");
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+            --accent: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --background: #020617;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--background);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            display: inline-block;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .connect-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .wallet-card {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: monospace;
+            color: var(--accent);
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .section-panel {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .section-panel.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        input {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.7rem;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.7rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        button.outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .marketplace-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .ticket-item {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 1.25rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ticket-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .ticket-id {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            font-family: monospace;
+        }
+
+        .ticket-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .ticket-price {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .status-tag {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .role-badge {
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .role-admin {
+            background: var(--accent);
+            color: #000;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loader */
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div class="user-info">Farhan Muamar Fawwaz - 103032300076</div>
+            <h1>Smart Ticketing System</h1>
+            <p style="color: var(--text-dim);">Tugas Besar Smart Contracts</p>
+            <div id="roleBadge" class="role-badge">ADMIN MODE</div>
+        </header>
+
+        <section class="connect-section">
+            <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+            <div id="wallet" class="wallet-card"></div>
+        </section>
+
+        <nav class="tabs" id="mainTabs">
+            <button class="tab-btn active" id="userTabBtn" onclick="showSection('user')">Marketplace & My
+                Tickets</button>
+            <button class="tab-btn hidden" id="adminTabBtn" onclick="showSection('admin')">Admin Management</button>
+        </nav>
+
+        <!-- USER SECTION -->
+        <div id="userSection" class="section-panel active">
+            <div style="margin-bottom: 2rem;">
+                <h2 style="font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🛒</span> Ticket Marketplace
+                </h2>
+                <div id="marketplaceList" class="marketplace-grid">
+                    <p style="opacity: 0.5; font-size: 0.9rem;">Connect your wallet to browse tickets...</p>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
+                <h2 style="font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>⭐</span> My Collections (Max 2)
+                </h2>
+                <div id="myTicketsList" class="marketplace-grid">
+                    <p style="opacity: 0.5; font-size: 0.9rem;">No tickets owned.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN SECTION -->
+        <div id="adminSection" class="section-panel">
+            <div class="grid">
+                <!-- Create -->
+                <div class="card">
+                    <h3><span>✨</span> Create New Ticket</h3>
+                    <div class="input-group">
+                        <label>Event Name</label>
+                        <input id="event" placeholder="e.g. Workshop Solidity">
+                    </div>
+                    <div class="input-group">
+                        <label>Base Price (ETH)</label>
+                        <input id="price" type="number" step="0.001" placeholder="0.01">
+                    </div>
+                    <button onclick="createTicket()">Publish to Marketplace</button>
+                </div>
+
+                <!-- Moderate -->
+                <div class="card">
+                    <h3><span>🛠️</span> Ticket Lifecycle</h3>
+                    <div class="input-group">
+                        <label>Ticket ID</label>
+                        <input id="adminActionId" type="number" placeholder="Enter ID">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <button onclick="adminAction('useTicket', 'adminActionId')"
+                            title="Check-in Tiket">Check-in</button>
+                        <button onclick="adminAction('expireTicket', 'adminActionId')" class="outline">Expire</button>
+                        <button onclick="adminAction('deleteTicket', 'adminActionId')" class="danger">Soft
+                            Delete</button>
+                    </div>
+                </div>
+
+                <!-- Finance -->
+                <div class="card">
+                    <h3><span>💰</span> Earnings & Withdrawal</h3>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 0.3rem;">Contract Balance</div>
+                        <div id="contractBalance" style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">
+                            0.00 ETH</div>
+                    </div>
+                    <button onclick="withdrawBalance()" class="outline" style="margin-top: 0.5rem;">Withdraw All
+                        Funds</button>
+                </div>
+            </div>
+        </div>
+
+        <footer style="margin-top: 4rem; text-align: center; opacity: 0.4; font-size: 0.75rem; padding-bottom: 2rem;">
+            &copy; 2024 Smart Ticketing DApp - Advanced Blockchain Project
+        </footer>
+    </div>
+
+    <script>
+        let provider, signer, contract, userAddress, isAdmin = false;
+        const contractAddress = "0x436dD040a43f9ac77b80f750C832667702a8038A";
+
+        const abi = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_ticketId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "buyTicket",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_eventName",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_price",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "createTicket",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_ticketId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "deleteTicket",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_ticketId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "expireTicket",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableInvalidOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableUnauthorizedAccount",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ReentrancyGuardReentrantCall",
+                "type": "error"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "previousOwner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnershipTransferred",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "renounceOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "buyer",
+                        "type": "address"
+                    }
+                ],
+                "name": "TicketBought",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "eventName",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TicketCreated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TicketDeleted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    }
+                ],
+                "name": "TicketTransferred",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TicketUsed",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "transferOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_ticketId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_to",
+                        "type": "address"
+                    }
+                ],
+                "name": "transferTicket",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_ticketId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "useTicket",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawBalance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getMyTickets",
+                "outputs": [
+                    {
+                        "internalType": "uint256[]",
+                        "name": "",
+                        "type": "uint256[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_ticketId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getTicket",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "id",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "eventName",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "owner",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isUsed",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isExpired",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isSold",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isDeleted",
+                                "type": "bool"
+                            }
+                        ],
+                        "internalType": "struct SmartTicketing.Ticket",
+                        "name": "",
+                        "type": "tuple"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "ticketCount",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tickets",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "id",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "eventName",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isUsed",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isExpired",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isSold",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isDeleted",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "userTickets",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+
+        ];
+
+        async function connectWallet() {
+            if (!window.ethereum) return alert("Install MetaMask!");
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, abi, signer);
+                userAddress = await signer.getAddress();
+
+                const contractOwner = await contract.owner();
+                isAdmin = (userAddress.toLowerCase() === contractOwner.toLowerCase());
+
+                document.getElementById("connectBtn").innerText = "Wallet Connected";
+                document.getElementById("wallet").innerText = userAddress.substring(0, 8) + "..." + userAddress.substring(38);
+                document.getElementById("wallet").style.display = "block";
+                document.getElementById("mainTabs").style.display = "flex";
+
+                if (isAdmin) {
+                    document.getElementById("adminTabBtn").classList.remove("hidden");
+                    document.getElementById("roleBadge").style.display = "inline-block";
+                    await updateAdminStats();
+                }
+
+                await refreshAll();
+            } catch (error) { console.error(error); }
+        }
+
+        async function refreshAll() {
+            await Promise.all([loadMarketplace(), loadMyTickets()]);
+        }
+
+        async function loadMarketplace() {
+            const list = document.getElementById("marketplaceList");
+            list.innerHTML = "Loading...";
+            try {
+                const count = await contract.ticketCount();
+                let html = "";
+                let found = 0;
+                for (let i = 1; i <= count; i++) {
+                    const t = await contract.getTicket(i);
+                    // Filter: Not sold, not deleted
+                    if (!t.isSold && !t.isDeleted) {
+                        html += `
+                            <div class="ticket-item" style="border-color: var(--primary)">
+                                <div class="ticket-header">
+                                    <span class="ticket-id">ID: #${t.id}</span>
+                                    <span class="status-tag" style="background: rgba(59,130,246,0.2); color: var(--primary)">Available</span>
+                                </div>
+                                <div class="ticket-name">${t.eventName}</div>
+                                <div class="ticket-price">${ethers.utils.formatEther(t.price)} ETH</div>
+                                <button class="sm" onclick="buyTicket(${t.id}, '${ethers.utils.formatEther(t.price)}')">Buy Now</button>
+                            </div>
+                        `;
+                        found++;
+                    }
+                }
+                list.innerHTML = found > 0 ? html : "<p style='opacity:0.5'>Marketplace empty.</p>";
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadMyTickets() {
+            const list = document.getElementById("myTicketsList");
+            list.innerHTML = "Loading...";
+            try {
+                const myIds = await contract.getMyTickets();
+                document.getElementById("slotCount").innerText = myIds.length;
+                let html = "";
+                for (let id of myIds) {
+                    const t = await contract.getTicket(id);
+                    const tagClass = t.isUsed ? "danger" : (t.isExpired ? "warning" : "accent");
+                    const status = t.isUsed ? "USED" : (t.isExpired ? "EXPIRED" : "ACTIVE");
+
+                    html += `
+                        <div class="ticket-item" style="border-color: var(--${tagClass})">
+                            <div class="ticket-header">
+                                <span class="ticket-id">ID: #${t.id}</span>
+                                <span class="status-tag" style="background:var(--${tagClass}); color:#000">${status}</span>
+                            </div>
+                            <div class="ticket-name">${t.eventName}</div>
+                            <div class="ticket-price">${ethers.utils.formatEther(t.price)} ETH</div>
+                            ${!t.isUsed && !t.isExpired ? `<button class="sm outline" onclick="transferUI(${t.id})">Transfer</button>` : ""}
+                        </div>
+                    `;
+                }
+                list.innerHTML = myIds.length > 0 ? html : "<p style='opacity:0.5'>No tickets owned.</p>";
+            } catch (e) { console.error(e); }
+        }
+
+        async function buyTicket(id, priceEth) {
+            try {
+                const tx = await contract.buyTicket(id, { value: ethers.utils.parseEther(priceEth) });
+                await tx.wait();
+                alert("CONGRATS! Ticket purchased successfully.");
+                await refreshAll();
+            } catch (e) {
+                if (e.reason && e.reason.includes("Maksimal 2")) {
+                    alert("FAILED: You can only own a maximum of 2 tickets.");
+                } else {
+                    alert("ERROR: " + (e.reason || e.message));
+                }
+            }
+        }
+
+        function showSection(role) {
+            document.querySelectorAll(".section-panel").forEach(p => p.classList.remove("active"));
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById(role + "Section").classList.add("active");
+            document.getElementById(role + "TabBtn").classList.add("active");
+        }
+
+        // ADMIN FUNCTIONS
+        async function createTicket() {
+            const event = document.getElementById("event").value;
+            const price = document.getElementById("price").value;
+            if (!event || !price) return alert("Fill all fields");
+            try {
+                const tx = await contract.createTicket(event, ethers.utils.parseEther(price));
+                await tx.wait();
+                alert("Ticket published to Marketplace!");
+                await loadMarketplace();
+                await updateAdminStats();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function adminAction(method, inputId) {
+            const id = document.getElementById(inputId).value;
+            if (!id) return alert("Enter Ticket ID");
+            try {
+                // Pre-validation for useTicket
+                if (method === 'useTicket') {
+                    const t = await contract.getTicket(id);
+                    if (!t.isSold) return alert("ACCESS DENIED: Ticket has not been sold yet. Validation failed.");
+                    if (t.isUsed) return alert("WARNING: This ticket was already used.");
+                }
+
+                const tx = await contract[method](id);
+                await tx.wait();
+
+                let successMsg = "Action Success!";
+                if (method === 'useTicket') successMsg = "Check-in Berhasil! Tiket digunakan dan slot user telah dikosongkan.";
+
+                alert(successMsg);
+                await refreshAll();
+                if (isAdmin) await updateAdminStats();
+            } catch (e) { alert("Failed: " + (e.reason || e.message)); }
+        }
+
+        async function withdrawBalance() {
+            try {
+                const tx = await contract.withdrawBalance();
+                await tx.wait();
+                alert("Funds withdrawn to your wallet!");
+                await updateAdminStats();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function updateAdminStats() {
+            const balance = await provider.getBalance(contractAddress);
+            document.getElementById("contractBalance").innerText = ethers.utils.formatEther(balance).substring(0, 6) + " ETH";
+        }
+
+        function transferUI(id) {
+            const to = prompt("Recipient Wallet Address:");
+            if (to && ethers.utils.isAddress(to)) {
+                transferTicket(id, to);
+            } else if (to) {
+                alert("Invalid wallet address!");
+            }
+        }
+
+        async function transferTicket(id, to) {
+            try {
+                const tx = await contract.transferTicket(id, to);
+                await tx.wait();
+                alert("Transfer complete!");
+                await refreshAll();
+            } catch (e) { alert(e.message); }
+        }
+    </script>
+</body>
+
+</html>
